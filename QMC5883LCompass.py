@@ -1,5 +1,5 @@
 import logging
-import time
+from time import sleep
 
 from smbus2 import SMBus
 
@@ -11,6 +11,30 @@ class QMC5883L:
         self.bus = SMBus(1) # TODO - not sure why bus 1 but it seems right
         self.output_range = output_range
         self.addr = address
+        self.mode_stby = (c.MODE_STBY | c.ODR_10HZ | c.RNG_2G | c.OSR_64)
+        self.mode_cont = (c.MODE_CONT | c.ODR_10HZ | c.RNG_2G | c.OSR_512)
+
+        chip_id = self.bus.read_byte_data(self.addr, c.REG_CHIP_ID)
+        if chip_id != 0xff:
+            msg = "Chip ID returned 0x%x instead of 0xff; is this the wrong chip?"
+            logging.warning(msg, chip_id)
+
+        self.mode_continuous()
+
+    def __del__(self):
+        self.mode_standby()
+
+    def mode_continuous(self):
+        self.bus.write_byte_data(self.addr, c.REG_CONTROL_2, c.SOFT_RST)  # Soft reset.
+        self.bus.write_byte_data(self.addr, c.REG_CONTROL_2, c.INT_ENB)  # Disable interrupt.
+        self.bus.write_byte_data(self.addr, c.REG_RST_PERIOD, 0x01)  # Define SET/RESET period.
+        self.bus.write_byte_data(self.addr, c.REG_CONTROL_1, self.mode_cont)  # Set operation mode.
+
+    def mode_standby(self):
+        self.bus.write_byte_data(self.addr, c.REG_CONTROL_2, c.SOFT_RST)
+        self.bus.write_byte_data(self.addr, c.REG_CONTROL_2, c.INT_ENB)
+        self.bus.write_byte_data(self.addr, c.REG_RST_PERIOD, 0x01)
+        self.bus.write_byte_data(self.addr, c.REG_CONTROL_1, self.mode_stby)
 
     def _read_data(self, low, high):
         low = self.bus.read_byte_data(self.addr, low)
@@ -48,7 +72,7 @@ class QMC5883L:
                 break
             else:
                 # Waiting for DRDY.
-                time.sleep(0.01)
+                sleep(0.01)
                 i += 1
         print(f"X: {x}, Y: {y}, Z: {z}, T: {t},")
         return [x, y, z, t]
@@ -56,4 +80,6 @@ class QMC5883L:
 
 if __name__ == "__main__":
     compass = QMC5883L()
-    compass.read()
+    for _ in range(1000):
+        compass.read()
+
