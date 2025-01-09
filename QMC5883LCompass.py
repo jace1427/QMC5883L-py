@@ -8,7 +8,7 @@ import constants as c
 
 class QMC5883L:
     def __init__(self, output_range=c.RNG_2G, address=c.DFLT_ADDRESS) -> None:
-        self.bus = SMBus(1) # TODO - not sure why bus 1 but it seems right
+        self.bus = SMBus(c.DFLT_ADDRESS) # TODO - not sure why bus 1 but it seems right
         self.output_range = output_range
         self.addr = address
         self.mode_stby = (c.MODE_STBY | c.ODR_10HZ | c.RNG_2G | c.OSR_64)

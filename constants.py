@@ -1,7 +1,7 @@
 ################
 ## CONSTANTS  ##
 ################
-DFLT_BUS = 1
+DFLT_BUS = 0
 DFLT_ADDRESS = 0x0d
 
 #### Registers ####
